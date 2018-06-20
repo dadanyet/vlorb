@@ -134,6 +134,12 @@ $global{filemask} = 0;
 # dirmask, set by parse_cmdline()
 $global{dirmask} = 0;
 
+# renumber offset, set by parse_cmdline()
+$global{renumber} = 0;
+
+# current renumbered track, set by vlorb()
+$global{retracknum} = 0;
+
 # 1 = CD is single-artist, 0 = CD is multi-artist.
 $global{singleartist} = 0;
 
@@ -167,7 +173,7 @@ push @devices, split(/\s*,\s*/, "$config{devices}") if ($config{devices});
 #         "--- dummy 80 chars line --------------------------------------------------------"
 sub usage() {
     print "Usage: vlorb [-fghoOpQrsStV] [-d <device>] [-e <encoder>] [-i <tracklist>]\n";
-    print "  [-m <mask>] [-M <mask>]\n";
+    print "  [-m <mask>] [-M <mask>] [-R <offset>]\n";
 }
 
 sub help() {
@@ -185,6 +191,7 @@ sub help() {
     print "    -p                 Toggle show encoding progress\n";
     print "    -Q                 Toggle quiet mode\n";
     print "    -r                 Toggle ReplayGain (vorbisgain with Ogg Vorbis) mode\n";
+    print "    -R <offset>        Renumber tracks by offset\n";
     print "    -s                 Toggle single-artist CD mode\n";
     print "    -S                 Optimize for speed (producing lower quality sound)\n";
     print "    -t                 Swap tracktitle and artist (in case of bad CDDB info)\n";
@@ -462,7 +469,7 @@ sub parse_cmdline() {
     my @seltracks;
 
     # Check for wrong options
-    if (! getopts('i:d:e:fghm:M:oOpQrsStV', \%opts)) {
+    if (! getopts('i:d:e:fghm:M:oOpQrR:sStV', \%opts)) {
         &usage;
         die "\n";
     }
@@ -559,6 +566,15 @@ sub parse_cmdline() {
         $global{dirmask} = $opts{M};
     }
 
+    # Renumber
+    if ($opts{R}) {
+	$_ = $opts{R};
+        if (/[^\d]/) {
+                &error("\"$_\" is not a valid number");
+        }
+        $global{renumber} = $opts{R};
+    }
+
     # Generate configuration file
     if ($opts{g}) {
         &gen_config;
@@ -646,11 +662,12 @@ sub toggle() {
 }
 
 #------------------------------------------------------------------------------
-# Escape quotes (filenames hate quotes)
+# Escape characters hated by filenames
 #------------------------------------------------------------------------------
 sub escape_var() {
     my $var = shift;
     $var =~ s/"/\\"/g if ($var);
+    $var =~ s/`/\\`/g if ($var);
     return $var;
 }
 
@@ -955,7 +972,7 @@ sub flac() {
 
     $flac_options .= ' -T artist="' . $artist . '"' if $artist;
     $flac_options .= ' -T title="' . $tracktitle . '"' if $tracktitle;
-    $flac_options .= ' -T tracknumber="' . $tracknum . '"' if $tracknum;
+    $flac_options .= ' -T tracknumber="' . $global{retracknum} . '"';
     $flac_options .= ' -T genre="' . $genre . '"' if $genre;
     $flac_options .= ' -T album="' . $disctitle . '"' if $disctitle;
 
@@ -1004,7 +1021,7 @@ sub oggenc() {
 	$filename = $filename . '.ogg' :
 	$filename = &get_nonexistant_filename($filename, '.ogg');
 
-    my $encode_command = 'oggenc ' . $bq . ' -N ' . $tracknum . ' -t "' . $tracktitle . '" "' . $fromfile . '" -o "' . $filename . '"';
+    my $encode_command = 'oggenc ' . $bq . ' -N ' . $global{retracknum} . ' -t "' . $tracktitle . '" "' . $fromfile . '" -o "' . $filename . '"';
 
     unless ($disctitle eq $config{unknown}) {
         $encode_command = $encode_command . " -l \"$disctitle\" -a \"$artist\" -G \"$genre\"";
@@ -1060,10 +1077,11 @@ sub vlorb() {
         my $tracktitle = '';
         my $filename = '';
 
-        $tracknum = "0$tracknum" unless ($tracknum > 9);
+        $global{retracknum} = $tracknum + $global{renumber};
+        $global{retracknum} = "0$global{retracknum}" unless ($global{retracknum} > 9);
 
         if ($disctitle eq $config{unknown}) {
-            $filename = "track$tracknum";
+            $filename = "track$global{retracknum}";
             $tracktitle = $filename;
         } else {
             if ($global{singleartist}) {
@@ -1091,7 +1109,7 @@ sub vlorb() {
 		  $_ eq 'A' && do { $fname[$i] = $artist };
 		  $_ eq 'D' && do { $fname[$i] = $disctitle2 };
 		  $_ eq 'G' && do { $fname[$i] = $genre2 };
-		  $_ eq 'N' && do { $fname[$i] = $tracknum };
+		  $_ eq 'N' && do { $fname[$i] = $global{retracknum} };
 		  $_ eq 'T' && do { $fname[$i] = $tracktitle };
 	      }
                 $i++;

@@ -7,7 +7,7 @@
 vlorb \- a high quality Audio CD to audio file encoder
 .SH SYNOPSIS
 
-\fBvlorb\fR [ \fB-f\fR ] [ \fB-g\fR ] [ \fB-h\fR ] [ \fB-o\fR ] [ \fB-O\fR ] [ \fB-p\fR ] [ \fB-Q\fR ] [ \fB-r\fR ] [ \fB-s\fR ] [ \fB-S\fR ] [ \fB-t\fR ] [ \fB-V\fR ] [ \fB-d \fIdevice\fB\fR ] [ \fB-e \fIencoder\fB\fR ] [ \fB-i \fItracklist\fB\fR ] [ \fB-m \fImask\fB\fR ] [ \fB-M \fImask\fB\fR ]
+\fBvlorb\fR [ \fB-f\fR ] [ \fB-g\fR ] [ \fB-h\fR ] [ \fB-o\fR ] [ \fB-O\fR ] [ \fB-p\fR ] [ \fB-Q\fR ] [ \fB-r\fR ] [ \fB-s\fR ] [ \fB-S\fR ] [ \fB-t\fR ] [ \fB-V\fR ] [ \fB-d \fIdevice\fB\fR ] [ \fB-e \fIencoder\fB\fR ] [ \fB-i \fItracklist\fB\fR ] [ \fB-m \fImask\fB\fR ] [ \fB-M \fImask\fB\fR ] [ \fB-R \fIoffset\fB\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -130,6 +130,12 @@ VorbisGain <URL:http://www.sjeng.org>
 \(bu
 ReplayGain <URL:http://www.replaygain.org>
 .RE
+.TP
+\fB-R\fR
+Set renumber offset.
+
+By default, vlorb numbers tracks beginning from 1. This option allows vlorb to
+renumber tracks, which is handy for ripping multi-disc sets into the same directory.
 .TP
 \fB-s\fR
 Toggle ``single-artist'' mode.
