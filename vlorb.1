@@ -1,0 +1,441 @@
+.\" $Id $
+.\" vlorb manual page
+.\" copyright (c) 2003 by Jochem Kossen <j.kossen@home.nl>
+.\" 
+.TH "VLORB" "1" "18 July 2003" "vlorb 1.2" ""
+.SH NAME
+vlorb \- a high quality Audio CD to audio file encoder
+.SH SYNOPSIS
+
+\fBvlorb\fR [ \fB-f\fR ] [ \fB-g\fR ] [ \fB-h\fR ] [ \fB-o\fR ] [ \fB-O\fR ] [ \fB-p\fR ] [ \fB-Q\fR ] [ \fB-r\fR ] [ \fB-s\fR ] [ \fB-S\fR ] [ \fB-t\fR ] [ \fB-V\fR ] [ \fB-d \fIdevice\fB\fR ] [ \fB-e \fIencoder\fB\fR ] [ \fB-i \fItracklist\fB\fR ] [ \fB-m \fImask\fB\fR ] [ \fB-M \fImask\fB\fR ]
+
+.SH "DESCRIPTION"
+.PP
+\fBvlorb\fR is a console frontend for
+\fBcdparanoia\fR and CDDB. It rips and encodes tracks
+from an audio CD to audio files. The aim of vlorb is to
+create high-quality audio files in a simple way, while
+providing a comfortable feature set.
+.PP
+\fBvlorb\fR uses CDDB to get CD information for tagging
+and file naming.
+.SH "OPTIONS"
+.TP
+\fB-f\fR
+Toggle on-the-fly mode
+
+When enabled, vlorb will pipe the cdparanoia output through the specified
+encoder, which in effect means it'll encode at the same time it rips. On fast
+machines, this will be faster, on slow machines it'll be slower, so on slow
+machines you might want to disable it.
+.TP
+\fB-g\fR
+Generate configuration file
+
+This will print your current configuration to STDOUT in a format
+readable by vlorb. You can save it by redirecting to
+\fI/etc/vlorbrc\fR or
+\fI$HOME/.vlorbrc\fR and adjust it to taste.
+.TP
+\fB-h\fR
+Output help information and exit.
+.TP
+\fB-o\fR
+Toggle ``overwrite tracks'' mode.
+
+By default, vlorb will not overwrite existing files.  It will generate
+new filenames by adding ``.n'', where n is a number, between the
+filename and it's extension (.ogg).
+
+So, in case ``overwrite tracks'' mode is disabled, and if
+\fIElvis Presley - Love Me Tender.ogg\fR exists, the
+new filename will be \fIElvis Presley - Love Me
+Tender.1.ogg\fR. If that file also already exists, the new
+filename will become \fIElvis Presley - Love Me
+Tender.2.ogg\fR, and so on, and so on.
+.TP
+\fB-O\fR
+Toggle ``overwrite album dir'' mode.
+
+By default, vlorb will not overwrite album directories. It will
+generate new directory names by adding ``.n'' where n is a
+number.
+
+So, in case ``overwrite dir'' mode is disabled,
+and if the dir \fIMetal
+Mania\fR exists, the new album dir
+name will be \fIMetal
+Mania.1\fR. If that dir also already
+exists, the new album dir name will become
+\fIMetal Mania.2\fR, and so on,
+and so on.
+
+Enable ``overwrite album dir'' mode to disable
+this behaviour.
+.TP
+\fB-p\fR
+Toggle ``show progress'' mode.
+
+When enabled, show oggenc encoding progress. It's ugly, but what the
+heck...
+.TP
+\fB-Q\fR
+Toggle ``quiet'' mode.
+
+Only output error messages.
+.TP
+\fB-r\fR
+Toggle ``ReplayGain'' mode.
+
+From the ReplayGain website:
+
+Not all CDs sound equally loud. The perceived loudness of mp3s is even
+more variable. Whilst different musical moods require that some tracks
+should sound louder than others, the loudness of a given CD has more
+to do with the year of issue or the whim of the producer than the
+intended emotional effect. If we add to this chaos the inconsistent
+quality of mp3 encoding, it's no wonder that a random play Through
+your music collection can have you leaping for the volume control
+every other track.
+
+There is a remarkably simple solution to this annoyance, and that is
+to store the required replay gain for each track within the
+track. This concept is called ``MetaData'', data about
+data. It's already possible to store the title, artist, and CD track
+number within an mp3 file using the ID3 standard. The later ID3v2
+standard also incorporates the ability to store a track relative
+volume adjustment, which can be used to ``fix'' quiet or
+loud sounding mp3s.
+
+VorbisGain uses the ReplayGain algorithm to do the same thing to Ogg
+Vorbis audio files.
+
+Or, From the VorbisGain website:
+
+VorbisGain is a utility that uses a psychoacoustic method to correct
+the volume of an Ogg Vorbis file to a predefined stan- dardized
+loudness.
+
+For Ogg Vorbis encoding, this requires that \fBvorbisgain\fR(1) is in
+your path.
+
+FLAC has replaygain support built-in.
+
+More information:
+.RS
+.TP 0.2i
+\(bu
+VorbisGain <URL:http://www.sjeng.org>
+.TP 0.2i
+\(bu
+ReplayGain <URL:http://www.replaygain.org>
+.RE
+.TP
+\fB-s\fR
+Toggle ``single-artist'' mode.
+
+By default, vlorb tries to detect if a CD is single-artist or
+multi-artist. In the rare case where it chooses wrongly, use this
+option to toggle single-artist mode.
+.TP
+\fB-S\fR
+Optimize for speed rather than quality.
+
+By default, vlorb encodes optimized for quality; by enabling this option vlorb
+will optimize for speed, producing lower quality audio files
+.TP
+\fB-t\fR
+Swap artist and tracktitle info
+
+Sometimes, CDDB has bad info, ie artist is set to the tracktitle, and
+tracktitle to artist. This swaps them so they're set correctly anyway.
+.TP
+\fB-V\fR
+Show version
+.TP
+\fB-d \fIdevice\fB\fR
+Use the specified CD-ROM device
+.TP
+\fB-e \fIencoder\fR
+Either ``oggenc'' to create Ogg Vorbis files, ``flac'' to create
+FLAC files or ``wav'' to create WAV files.
+.TP
+\fB-i \fItracklist\fB\fR
+Only rip these tracks
+
+tracklist is in the form of '1,2,6,9'
+.TP
+\fB-m \fImask\fB\fR
+Generate filenames using the specified mask, eg ``vlorb -m ADNT''
+.TP
+\fB-M \fImask\fB\fR
+Generate album directories using this mask, eg ``vlorb -M DA''
+.SH "FILES"
+.TP 0.2i
+\(bu
+\fI/etc/vlorbrc\fR system-wide configuration file
+.TP 0.2i
+\(bu
+\fI$HOME/.vlorbrc\fR user configuration file
+.PP
+Format: key=value, comments start with ``#'' as the first
+character on a line.
+.SS "VLORB CONFIGURATION FILE"
+
+.nf
+#
+# vlorb configuration file
+#   format: key=value
+#
+ogg_quality=3
+cddb_host=freedb.freedb.org
+overwrite_dir=1
+overwrite_tracks=0
+.fi
+.PP
+You can generate these files by using vlorb's ``-g'' option
+(see \fBUSAGE\fR below)
+.PP
+\fBAvailable configuration file options:\fR
+.TP 0.2i
+\(bu
+cddb_host
+
+Which host to use for CDDB connections
+.PP
+.PP
+Example: cddb_host=freedb.freedb.org
+.TP 0.2i
+\(bu
+cddb_port
+
+Which TCP/IP port to use for connection.
+.PP
+.PP
+Example: cddb_port=8880
+.TP 0.2i
+\(bu
+devices
+
+Comma seperated list of paths to device names of CD-ROM devices to use.
+.PP
+.PP
+Example: devices=/dev/cdroms/cdrom0, /dev/cdroms/cdrom1
+.TP 0.2i
+\(bu
+dirmask_s
+
+A = Artist, D = Disctitle
+
+Order of tags to use for directory name generation  for  single-
+artist CD's.
+.PP
+.PP
+Example: dirmask_s=AD
+.TP 0.2i
+\(bu
+encoder
+
+Default encoder to use, either ``oggenc'', ``flac'' or ``wav''
+.PP
+.PP
+Example: encoder=flac
+.TP 0.2i
+\(bu
+filemask_m
+
+A  =  Artist,  D  =  Disctitle,  G = Genre, N = Tracknumber, T =
+Tracktitle.
+
+Order of tags to use for filename  generation  for  multi-artist
+CD's.
+.PP
+.PP
+Example: filemask_m=DNAT
+.TP 0.2i
+\(bu
+filemask_s
+
+A  =  Artist,  D  =  Disctitle,  G = Genre, N = Tracknumber, T =
+Tracktitle.
+
+Order of tags to use for filename generation  for  single-artist
+CD's.
+.PP
+.PP
+Example: filemask_s=ADNT
+.TP 0.2i
+\(bu
+filemask_seperator
+
+Seperator  to  use  between  parts  of  filename.
+.PP
+.PP
+Example: filemask_seperator= - 
+.TP 0.2i
+\(bu
+ogg_bitrate
+
+Set default ogg encoding bitrate to the specified number.
+.PP
+.PP
+Example: ogg_bitrate=128
+.TP 0.2i
+\(bu
+ogg_bitrate_speed
+
+Set default ogg encoding bitrate when encoding optimized for speed to the specified number.
+.PP
+.PP
+Example: ogg_bitrate_speed=48
+.TP 0.2i
+\(bu
+ogg_quality
+
+Set default ogg encoding quality to the specified number, between -1 and 10.
+.PP
+.PP
+Example: ogg_quality=6
+.TP 0.2i
+\(bu
+ogg_quality_speed
+
+Set default ogg encoding quality to the specified number, between -1 and 10
+when encoding optimized for speed.
+.PP
+.PP
+Example: ogg_quality_speed=1
+.TP 0.2i
+\(bu
+ogg_use_bitrate
+
+1 = use bitrate, 0 = use quality.
+.PP
+.PP
+Example: ogg_use_bitrate=0
+.TP 0.2i
+\(bu
+on_the_fly
+
+1 = encode on the fly, 0 = don't encode on the fly (create WAV files, and then
+encode those into encoded files)
+.PP
+.PP
+Example: on_the_fly=1
+.TP 0.2i
+\(bu
+optimize_speed
+
+1 = optimize for speed rather than quality, 0 = optimize for quality rather than speed
+.PP
+.PP
+Example: optimize_speed=0
+.TP 0.2i
+\(bu
+overwrite_dir
+
+1 = Overwrite album directory, 0 = generate  non-existing  album
+directory.
+.PP
+.PP
+Example: overwrite_dir=0
+.TP 0.2i
+\(bu
+overwrite_tracks
+
+1  =  Overwrite  track  files,  0  = generate non-existing track
+files.
+.PP
+.PP
+Example: overwrite_tracks=0
+.TP 0.2i
+\(bu
+quiet
+
+1 = Show only error messages, 0 = show all output.
+.PP
+.PP
+Example: quiet=0
+.TP 0.2i
+\(bu
+remove_source_files
+
+When encoding off the fly:
+1 = remove source files, 0 = keep source files
+.PP
+.PP
+Example: remove_source_files=1
+.TP 0.2i
+\(bu
+replaygain
+
+1 = use ReplayGain to fix volumes, 0 = don't use ReplayGain
+.PP
+.PP
+Example: replaygain=1
+.TP 0.2i
+\(bu
+show_progress
+
+1 = show oggenc encoding progress, 0 = don't show oggenc encoding progress.
+.PP
+.PP
+Example: show_progress=1
+.TP 0.2i
+\(bu
+stop_if_unknown
+
+1 = stop if no cddb data is found, 0 = continue of no cddb data is found
+.PP
+.PP
+Example: stop_if_unknown=1
+.TP 0.2i
+\(bu
+unknown
+
+Name for CD's of which no CDDB data exists.
+.PP
+.PP
+Example: unknown=Unknown Album
+.SH "USAGE"
+.PP
+To run this program the default way:
+.PP
+.PP
+\fBvlorb\fR
+.PP
+To use /dev/cdroms/cdrom1 as device, and enable VorbisGain:
+.PP
+.PP
+\fBvlorb -d /dev/cdroms/cdrom1 -v\fR
+.PP
+To only rip track numbers 3, 7 and 8:
+.PP
+.PP
+\fBvlorb -i '3,7,8'\fR
+.PP
+To generate an initial configuration file in your home directory:
+.PP
+.PP
+\fBvlorb -g >~/.vlorbrc\fR
+.PP
+To generate an initial configuration file in your home directory with
+``VorbisGain'' mode toggled:
+.PP
+.PP
+\fBvlorb -v -g >~/.vlorbrc\fR
+.PP
+To view the current configuration:
+.PP
+.PP
+\fBvlorb -g\fR
+.SH "BUGS"
+.PP
+Please report them to <j.kossen@home.nl>
+.SH "SEE ALSO"
+.PP
+\fBcdparanoia\fR(1) \fBoggenc\fR(1)
+\fBperl\fR(1) \fBvorbisgain\fR(1)
+.SH "AUTHORS"
+.PP
+Jochem Kossen, <j.kossen@home.nl>

@@ -1,0 +1,1134 @@
+#!/usr/bin/env perl
+#
+# vlorb, an audio CD to audio file encoder.
+# Copyright (c) 2002, Jochem Kossen <j.kossen@home.nl>
+#
+# see README for instructions and other information.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+# $Id: vlorb,v 1.26.2.7.2.17 2003/07/24 14:16:17 jochem Exp $
+#
+
+use CDDB;
+use English;
+use Getopt::Std;
+use strict;
+use warnings;
+
+#------------------------------------------------------------------------------
+# Default configuration options.
+#------------------------------------------------------------------------------
+# NOTE: You can change these in /etc/vlorbrc or $HOME/.vlorbrc, see vlorb -g
+
+my %config;
+my %config_user;
+
+# Path to devices to try
+$config{devices} = '/dev/cdroms/cdrom1, /dev/cdroms/cdrom0, /dev/cdrom1, /dev/cdrom, /dev/hdd, /dev/hdc, /dev/dvd';
+
+if (("$^O" eq 'openbsd') || ("$^O" eq 'netbsd')){
+    $config{devices} = '/dev/cd1c, /dev/cd0c';
+}
+
+if ("$^O" eq 'freebsd') {
+    $config{devices} = '/dev/acd1c, /dev/acd0c, /dev/cd1c, /dev/cd0c';
+}
+
+# 1 = optimize for speed at the cost of quality, 0 = optimize for
+# quality at the cost of speed
+$config{optimize_speed} = 0;
+
+# 1 = Use bitrate mode, 0 = use quality mode for ogg encoding.
+$config{ogg_use_bitrate} = 0;
+
+# Sets encoding to the bitrate closest to n (in kb/s).
+$config{ogg_bitrate} = 192;
+$config{ogg_bitrate_speed} = 48;
+
+# Sets encoding quality to n, between -1 (low) and 10 (high).
+$config{ogg_quality} = 6;
+$config{ogg_quality_speed} = 2;
+
+# 1 = rip on the fly, 0 = rip off the fly
+$config{on_the_fly} = 1;
+
+# 1 = Use ReplayGain, 0 = don't use ReplayGain.
+$config{replaygain} = 1;
+
+# 1 = Overwrite filenames, 0 = generate non-existing filenames.
+$config{overwrite_tracks} = 0;
+
+# 1 = Overwrite album dir, 0 = generate non-existing album dir.
+$config{overwrite_dir} = 0;
+
+# 1 = Show only error messages, 0 = show all output.
+$config{quiet} = 0;
+
+# when ripping off the fly:
+# 1 = remove source WAV files, 0 = keep source WAV files
+$config{remove_source_files} = 1;
+
+# Name for CD's of which no CDDB data exists.
+$config{unknown} = 'Unknown Album';
+
+# Which host to use for CDDB connections
+$config{cddb_host} = 'freedb.freedb.org';
+
+# Which TCP/IP port to use for connection.
+$config{cddb_port} = '8880';
+
+# Show encoding progress.
+$config{show_progress} = 0;
+
+# Exit with error if no CDDB info was found
+$config{stop_if_unknown} = 0;
+
+# Seperator to use between parts of filename
+$config{filemask_seperator} = ' - ';
+
+# A = Artist, D = Disctitle, G = Genre, N = Tracknumber, T = Tracktitle.
+#
+# Order of tags to use for filename generation for multi-artist CD's.
+# available tags: A, D, G, N, T
+$config{filemask_m} = 'DNAT';
+
+# Order of tags to use for filename generation for single-artist CD's.
+# available tags: A, D, G, N, T
+$config{filemask_s} = 'ADNT';
+
+# Order of tags to use for directory name generation for single-artist CD's.
+# available tags: A, D
+$config{dirmask_s} = 'AD';
+
+# Encoder to use...currently only oggenc, flac and wav are supported
+# MP3...dunno, since it's obsoleted by ogg, and non-free...
+$config{encoder} = 'oggenc';
+
+#------------------------------------------------------------------------------
+# Global vars, don't change these
+#------------------------------------------------------------------------------
+my %global;
+
+# vlorb version
+$global{version} = 'vlorb 1.2';
+
+# 1 = Rip individual tracks, 0 = rip all tracks.
+$global{individual} = 0;
+
+# filemask, set by parse_cmdline()
+$global{filemask} = 0;
+
+# dirmask, set by parse_cmdline()
+$global{dirmask} = 0;
+
+# 1 = CD is single-artist, 0 = CD is multi-artist.
+$global{singleartist} = 0;
+
+# cdparanoia
+$global{have_cdparanoia} = 0;
+
+# oggenc
+$global{have_oggenc} = 0;
+
+# flac
+$global{have_flac} = 0;
+
+# metaflac
+$global{have_metaflac} = 0;
+
+# swap artist and tracktitle info (in case of bad CDDB info)
+$global{swap_artist_tracktitle} = 0;
+
+# vorbisgain
+$global{have_vorbisgain} = 0;
+
+# devices
+$global{device} = 0;
+my @devices = ();
+push @devices, split(/\s*,\s*/, "$config{devices}") if ($config{devices});
+
+#------------------------------------------------------------------------------
+# Functions
+#------------------------------------------------------------------------------
+
+#         "--- dummy 80 chars line --------------------------------------------------------"
+sub usage() {
+    print "Usage: vlorb [-fghoOpQrsStV] [-d <device>] [-e <encoder>] [-i <tracklist>]\n";
+    print "  [-m <mask>] [-M <mask>]\n";
+}
+
+sub help() {
+    print "\n";
+    &show_version;
+    print "\n";
+    &usage;
+#         "--- dummy 80 chars line --------------------------------------------------------"
+    print "\n";
+    print "    -f                 Toggle on-the-fly mode\n";
+    print "    -g                 Generate configuration file\n";
+    print "    -h                 Show this help message\n";
+    print "    -o                 Toggle overwrite tracks mode\n";
+    print "    -O                 Toggle overwrite album dir mode\n";
+    print "    -p                 Toggle show encoding progress\n";
+    print "    -Q                 Toggle quiet mode\n";
+    print "    -r                 Toggle ReplayGain (vorbisgain with Ogg Vorbis) mode\n";
+    print "    -s                 Toggle single-artist CD mode\n";
+    print "    -S                 Optimize for speed (producing lower quality sound)\n";
+    print "    -t                 Swap tracktitle and artist (in case of bad CDDB info)\n";
+    print "    -V                 Show version info\n";
+    print "    -d <device>        Specify which device to use\n";
+    print "    -e <encoder>       Specify which encoder to use ('flac', 'oggenc' or 'wav')\n";
+    print "    -i <tracklist>     Which tracks to rip, eg.: vlorb -i \"1,3,5,12\"\n";
+    print "    -m <mask>          Generate filenames using this mask\n";
+    print "    -M <mask>          Generate album directories using this mask\n";
+}
+
+sub show_version() {
+    print $global{version} . "\n" . '$Date: 2003/07/24 14:16:17 $' . "\n" . 'Copyright (c) 2003 by Jochem Kossen' . "\n";
+}
+
+#------------------------------------------------------------------------------
+# Main program loop
+#------------------------------------------------------------------------------
+sub phase1() {
+    my @seltracks = &parse_cmdline;
+    &get_config;
+    &detect_apps;
+    &update_alternatives;
+    &merge_config;
+    &phase2;
+    &phase3(@seltracks);
+}
+
+sub phase2() {
+    &check_device;
+    &sanity_check;
+}
+
+sub phase3() {
+    my @seltracks = @_;
+
+    # album directory mask (dirmask)
+    my $dirmask = $config{dirmask_s};
+    $dirmask = $global{dirmask} if $global{dirmask};
+
+    my $raw_toc = '';
+    while ($raw_toc eq '') {
+        $raw_toc = &get_raw_toc;
+    }
+
+    my ($artist,
+	$disctitle,
+	$genre,
+	$highest_tracknum,
+	@tracktitles) = &get_cddb_info(&calculate_toc($raw_toc));
+
+    # try to guess if this is a single-artist cd
+    my @multiartist_tracks = grep(/ - /, @tracktitles);
+
+    #if ($#multiartist_tracks <= ($#tracktitles+1)/2) {
+    if ($#multiartist_tracks <= ($highest_tracknum+1)/2) {
+        $global{singleartist} = 1;
+    }
+
+    # filemask
+    my $filemask = $config{filemask_m};
+    $filemask = $config{filemask_s} if ($global{singleartist});
+    $filemask = $global{filemask} if ($global{filemask});
+
+    # set $disctitle to $unknown if no cddb data is available
+    $disctitle = $config{unknown} unless ($disctitle);
+
+    # make array of all tracks, unless user rips individual tracks
+    unless ($global{individual}) {
+        my $tracknum = 1;
+        foreach my $track (@tracktitles) {
+            push @seltracks, $tracknum;
+            $tracknum++;
+        }
+    }
+
+    # check if tracknumbers are not higher than the last tracknumber
+    # of the CD
+    for (@seltracks) {
+        if ($_ > $highest_tracknum) {
+            &error("wrong tracknumber: $_");
+        }
+    }
+
+    # Here the real work starts, create album dir, print info and
+    # start vlorbing
+    my $albumdir = &mk_album_directory($artist, $disctitle, $dirmask);
+
+    # print info on the screen about the ripping
+    &print_info($artist, $disctitle, $albumdir, \@seltracks, \@tracktitles);
+
+    &msg("\n");
+
+    # actually start ripping and encoding
+    &vlorb($artist, $genre, $disctitle, $filemask, \@seltracks, \@tracktitles);
+}
+
+#------------------------------------------------------------------------------
+# Detect available apps
+#------------------------------------------------------------------------------
+sub detect_apps() {
+    `cdparanoia -V 2>&1`;
+    $global{have_cdparanoia} = 1 if ($? == 0);
+    `oggenc -v 2>&1`;
+    $global{have_oggenc} = 1 if ($? == 0);
+    `flac -v 2>&1`;
+    $global{have_flac} = 1 if ($? == 0);
+    `vorbisgain -v 2>&1`;
+    $global{have_vorbisgain} = 1 if ($? == 0);
+    `metaflac --help 2>&1`;
+    $global{have_metaflac} = 1 if ($? == 0);
+}
+
+#------------------------------------------------------------------------------
+# Change default config based on apps detected
+#------------------------------------------------------------------------------
+sub update_alternatives() {
+    # switch to flac if that's available while oggenc is not (oggenc
+    # is default)
+    if (! $global{have_oggenc}) {
+        if (! $global{have_flac}) {
+            if (! $global{have_cdparanoia}) {
+                &error('no encoders available (flac, oggenc or wav)');
+            } else {
+                $config{encoder} = 'wav';
+            }
+        } else {
+            $config{encoder} = 'flac';
+        }
+    }
+
+    # turn off replaygain if encoder is oggenc but we have no vorbisgain
+    if ($config{encoder} eq 'oggenc'){
+        if (! $global{have_vorbisgain}) {
+            $config{replaygain} = 0;
+        }
+    }
+
+    # turn off replaygain if encoder is flac but we have no metaflac
+    if ($config{encoder} eq 'flac') {
+        if (! $global{have_metaflac}) {
+            $config{replaygain} = 0;
+        }
+    }
+
+    # turn off replay-gain for WAV files
+    if ($config{encoder} eq 'wav') {
+        $config{replaygain} = 0;
+        # on/off-the-fly is irrelevant for WAV
+        $config{on_the_fly} = 0;
+    }
+}
+
+#------------------------------------------------------------------------------
+# Switch to alternative device if that isn't tried already
+#------------------------------------------------------------------------------
+sub switch_device() {
+    ($global{device} >= $#devices) ?
+	return -1 :
+	$global{device}++;
+}
+
+#------------------------------------------------------------------------------
+# Swap two variables
+#------------------------------------------------------------------------------
+sub swap_vars() {
+    return ($_[1], $_[0]);
+}
+
+#------------------------------------------------------------------------------
+# Device sanity check
+#------------------------------------------------------------------------------
+sub check_device() {
+    unless ((-e "$devices[$global{device}]") &&
+	    (-r "$devices[$global{device}]") &&
+	    (-b "$devices[$global{device}]")) {
+        if (&switch_device != -1) {
+            &phase2();
+        } else {
+            &error('No suitable device found. Check permissions and device names...');
+        }
+    }
+}
+
+#------------------------------------------------------------------------------
+# Configuration sanity check
+#------------------------------------------------------------------------------
+sub sanity_check() {
+    # Bitrate sanity check
+    for my $bitrate ($config{ogg_bitrate}, $config{ogg_bitrate_speed}) {
+        my $is_bitrate = 0;
+
+        my @bitrates = (48, 56, 64, 72, 80, 88, 96, 104, 112, 120,
+			128, 136, 144, 152, 160, 168, 176, 184, 192,
+			200, 208, 216, 224, 232, 240, 248, 256, 264,
+			272, 280, 288, 296, 304, 312, 320);
+
+        for (@bitrates) {
+            vec($is_bitrate, $_, 1) = 1;
+        }
+
+        if (($bitrate =~ /[^\d]/) || (! vec($is_bitrate, $bitrate, 1))) {
+            &error("ogg_bitrate and ogg_bitrate_speed should be set to one of: @bitrates");
+        }
+    }
+
+    # Quality sanity check
+    for ($config{ogg_quality}, $config{ogg_quality_speed}) {
+        if ((/[^-*\d]/) || ($_ < -1) || ($_ > 10)) {
+            &error('ogg_quality and ogg_quality_speed should be set to an integer between -1 and 10');
+        }
+    }
+
+    # Check $config{filemask_seperator} for illegal characters
+    if ($config{filemask_seperator} =~ /[\t\n\r\f]/) {
+        &error('configuration option "filemask_seperator" contains illegal characters');
+    }
+
+    # Check filemasks for errors
+    for my $mask ($config{filemask_m}, $config{filemask_s}, $global{filemask}) {
+        if ($mask) {
+            my @fname = split(//, $mask);
+            for (@fname) {
+                ($_ ne 'A' && $_ ne 'D' && $_ ne 'G' && $_ ne 'N' && $_ ne 'T') && do {
+                    &error('error in filemask: ' . $mask);
+                };
+            }
+        }
+    }
+
+    # Check dirmask for errors
+    for my $dirmask ($config{dirmask_s}, $global{dirmask}) {
+        if ($dirmask) {
+            my @dname = split(//, $dirmask);
+            for (@dname) {
+                ($_ ne 'A' && $_ ne 'D') && do { &error('error in dirmask: ' . $dirmask) };
+            }
+        }
+    }
+
+    # check if we have cdparanoia
+    &error('no useable cdparanoia found in path') unless $global{have_cdparanoia};
+
+    # Check encoder is correct
+    if (($config{encoder} ne 'oggenc') && ($config{encoder} ne 'flac') && ($config{encoder} ne 'wav')) {
+        &error('encoder should be one of \'flac\', \'oggenc\' or \'wav\'');
+    } else {
+        if ($config{encoder} eq 'oggenc') {
+            &error('no useable oggenc found in path') unless $global{have_oggenc};
+        } elsif ($config{encoder} eq 'flac') {
+            &error('no useable flac found in path') unless $global{have_flac};
+        } elsif ($config{encoder} eq 'wav') {
+            &error('no useable cdparanoia found in path') unless $global{have_cdparanoia};
+        } else {
+            # this shouldn't be possible, but what the heck...
+            &error('no encoder specified');
+        }
+    }
+
+    # Check if vorbisgain is in path
+    if ($config{replaygain}) {
+        if ($config{encoder} eq 'oggenc') {
+            if (! $global{have_vorbisgain}) {
+                &error('no useable vorbisgain in path');
+            }
+        }
+    }
+}
+
+#------------------------------------------------------------------------------
+# Parse commandline options
+#------------------------------------------------------------------------------
+sub parse_cmdline() {
+    my %opts;
+    my @seltracks;
+
+    # Check for wrong options
+    if (! getopts('i:d:e:fghm:M:oOpQrsStV', \%opts)) {
+        &usage;
+        die "\n";
+    }
+
+    # Help
+    if ($opts{h}) {
+        &help;
+        exit;
+    }
+
+    # On-the-fly mode
+    if ($opts{f}) {
+        $config{on_the_fly} = &toggle($config{on_the_fly});
+    }
+
+    # Overwrite files if they exist
+    if ($opts{o}) {
+        $config_user{overwrite_tracks} = &toggle($config{overwrite_tracks});
+    }
+
+    # Overwrite album dir if it exists
+    if ($opts{O}) {
+        $config_user{overwrite_dir} = &toggle($config{overwrite_dir});
+    }
+
+    # Quiet, only output errors
+    if ($opts{Q}) {
+        $config_user{quiet} = &toggle($config{quiet});
+        $config_user{show_progress} = &toggle($config{show_progress});
+    }
+
+    # ReplayGain
+    if ($opts{r}) {
+        $config_user{replaygain} = &toggle($config{replaygain});
+    }
+
+    # Multi-artist cd or single-artist cd
+    if ($opts{s}) {
+        $global{singleartist} = &toggle($global{singleartist});
+    }
+
+    # Multi-artist cd or single-artist cd
+    if ($opts{S}) {
+        $config_user{optimize_speed} = &toggle($config{optimize_speed});
+    }
+
+    # Swap artist and tracktitle info in case of bad CDDB info
+    if ($opts{t}) {
+        $global{swap_artist_tracktitle} = &toggle($global{swap_artist_tracktitle});
+    }
+
+    # Show encoding progress
+    if ($opts{p}) {
+        $config_user{show_progress} = &toggle($config{show_progress});
+    }
+
+    # Show version info
+    if ($opts{V}) {
+        &show_version();
+        exit;
+    }
+
+    # Device name
+    if ($opts{d}) {
+        @devices = ("$opts{d}");
+    }
+
+    # Encoder
+    if ($opts{e}) {
+        $config_user{encoder} = $opts{e};
+    }
+
+    # Rip individual tracks
+    if ($opts{i}) {
+        $global{individual} = 1;
+        my $indtracks = $opts{i};
+        $indtracks =~ s/\s+//g; # strip whitespace
+        push(@seltracks, (split /,/, $indtracks));
+
+        for (@seltracks) {
+            if (/[^\d]/) {
+                &error("\"$_\" is not a valid number");
+            }
+        }
+    }
+
+    # Filemask
+    if ($opts{m}) {
+        $global{filemask} = $opts{m};
+    }
+
+    # Dirmask
+    if ($opts{M}) {
+        $global{dirmask} = $opts{M};
+    }
+
+    # Generate configuration file
+    if ($opts{g}) {
+        &gen_config;
+        exit;
+    }
+
+    return @seltracks;
+}
+
+#------------------------------------------------------------------------------
+# Parse configuration file
+#------------------------------------------------------------------------------
+sub parse_config() {
+    my $file = $_[0];
+    open(FILE, $file) || &error("Failed to read $file");
+    while (<FILE>) {
+        if ((/^\#/) || (/^$/)) {
+            next;
+        } else {
+            my ($key, $val) = split(/=/, $_, 2);
+            chomp $val if $val;
+            if (exists($config{$key})) {
+                $config_user{$key} = $val;
+            } else {
+                &error("Unknown option on line $. of $file");
+            }
+            &error("Error on line $. of $file:\n$@\n") if ($@);
+        }
+    }
+    close(FILE);
+}
+
+#------------------------------------------------------------------------------
+# Get configuration
+#------------------------------------------------------------------------------
+sub get_config() {
+    &parse_config('/etc/vlorbrc') if (-e '/etc/vlorbrc');
+    &parse_config("$ENV{HOME}/.vlorbrc") if (-e "$ENV{HOME}/.vlorbrc");
+}
+
+#------------------------------------------------------------------------------
+# Generate configuration file, print it to STDOUT
+#------------------------------------------------------------------------------
+sub gen_config() {
+    &merge_config;
+    print "#\n# vlorb configuration file\n";
+    print "#   format: key=value\n#\n";
+    for my $key (sort (keys %config)) {
+        print "$key=$config{$key}\n";
+    }
+}
+
+#------------------------------------------------------------------------------
+# Merge commandline options with vlorb's default configuration
+#------------------------------------------------------------------------------
+sub merge_config() {
+    for (keys %config_user) {
+        $config{$_} = $config_user{$_};
+    }
+    # config_user not needed anymore
+    undef(%config_user);
+}
+
+#------------------------------------------------------------------------------
+# Make all error messages look alike
+#------------------------------------------------------------------------------
+sub error() {
+    die " [!!] @_\n";
+}
+
+#------------------------------------------------------------------------------
+# Handy dandy function for showing normal program messages
+#------------------------------------------------------------------------------
+sub msg() {
+    unless ($config{quiet}) {
+        print "@_";
+    }
+}
+
+#------------------------------------------------------------------------------
+# Return 0 if given var is defined, otherwise return 1
+#------------------------------------------------------------------------------
+sub toggle() {
+    ($_[0] == 1) ? return 0 : return 1;
+}
+
+#------------------------------------------------------------------------------
+# Escape quotes (filenames hate quotes)
+#------------------------------------------------------------------------------
+sub escape_var() {
+    my $var = shift;
+    $var =~ s/"/\\"/g if ($var);
+    return $var;
+}
+
+#------------------------------------------------------------------------------
+# Generate non-existing filename
+#------------------------------------------------------------------------------
+sub get_nonexistant_filename() {
+    my $file = $_[0];
+    my $ext = $_[1];
+    my $nr = 1;
+
+    my $complete_file = $file;
+    $complete_file = $file . $ext if ($ext);
+
+    if (-e $complete_file) {
+        while() {
+            if ($ext) {
+                (-e "${file}.${nr}${ext}") ?
+		    $nr++ :
+		    return "${file}.${nr}${ext}";
+            } else {
+                (-e "${file}.${nr}") ?
+		    $nr++ :
+		    return "${file}.${nr}";
+            }
+        }
+    } else {
+        ($ext) ?
+	    return $file . $ext :
+	    return $file;
+    }
+}
+
+#------------------------------------------------------------------------------
+# Create album directory
+#------------------------------------------------------------------------------
+sub mk_album_directory() {
+    my ($artist, $disctitle, $mask) = @_;
+    my $albumdir;
+
+    if (($global{singleartist}) && ($disctitle ne $config{unknown})) {
+        my @dname = split(//, $mask);
+        for (@dname) {
+            ($_ ne 'A' && $_ ne 'D') && do { &error('error in dirmask: ' . $mask) };
+        }
+        my $i = 0;
+        for (@dname) {
+	  SWITCH: {
+	      $_ eq 'A' && do { ($artist) ? ($dname[$i] = $artist) : ($dname[$i] = 0) };
+	      $_ eq 'D' && do { ($disctitle) ? ($dname[$i] = $disctitle) : ($dname[$i] = 0) };
+	  }
+            $i++;
+        }
+
+        my $dirname = $dname[0];
+        $i = 1;
+        while ($i <= $#dname) {
+            $dirname = $dirname . $config{filemask_seperator} . $dname[$i] if ($dname[$i]);
+            $i++;
+        }
+        $albumdir = $dirname;
+    } else {
+        $albumdir = $disctitle;
+    }
+
+    $albumdir = &get_nonexistant_filename($albumdir, 0) unless ($config{overwrite_dir});
+
+    mkdir($albumdir, 0777) unless (-e "$albumdir");
+    chdir($albumdir);
+
+    return $albumdir;
+}
+
+#------------------------------------------------------------------------------
+# Get raw TOC using cdparanoia
+#------------------------------------------------------------------------------
+sub get_raw_toc() {
+    &msg('Reading TOC: ');
+    my @toc = ();
+    my $output = `cdparanoia -d $devices[$global{device}] -Q 2>&1`;
+    if ($?) {
+        if (&switch_device != -1) {
+            &msg("failed. Trying alternative device...\n");
+            return '';
+        } else {
+            &error('Could not get TOC. No audio CD in drive(s)?');
+        }
+    } else {
+        return $output;
+    }
+}
+
+#------------------------------------------------------------------------------
+# Calculate useable TOC from raw toc
+#------------------------------------------------------------------------------
+sub calculate_toc() {
+    my $raw_toc = $_[0];
+
+    my @toc = ();
+    my @toc_raw = split(/\=+/, $raw_toc);
+    @toc_raw = split(/\n/, $toc_raw[1]) if ($toc_raw[1]);
+
+    shift @toc_raw;
+    foreach my $raw_track (@toc_raw) {
+        if ($raw_track =~ /\bTOTAL\b/) {
+            my $begin = (split(/\bTOTAL\b +\d+ \[/, $raw_track, 2))[1];
+            my ($first, $second, $third) = (split(/:|\.|\]/, $begin, 4))[0,1,2];
+            my $good_track = '999' . ' ' . $first . ' ' . $second . ' ' . $third;
+            chomp($good_track);
+            push @toc, $good_track;
+        } else {
+            my ($tracknum, $begin) = split(/\. +\d+ \[\d+:\d+\.\d+\] +\d+ \[/, $raw_track, 2);
+            $tracknum = (split(/\s+/, $tracknum, 2))[1];
+            my ($first, $second, $third) = (split(/:|\.|\]/, $begin, 4))[0,1,2];
+            my $good_track = $tracknum . ' ' . $first . ' ' . $second . ' ' . $third;
+            push @toc, $good_track;
+        }
+    }
+    &msg("done.\n");
+    return @toc;
+}
+
+#------------------------------------------------------------------------------
+# Get CDDB info (with timeout exception)
+#------------------------------------------------------------------------------
+sub get_cddb_info() {
+    my @toc = @_;
+    my ($artist, $disctitle, $genre, $highest_tracknum, @tracktitles);
+
+    &msg('Connecting to CDDB: ');
+    eval {
+        local $SIG{ALRM} = sub {
+            &error('alarm clock restart');
+        };
+        # timeout CDDB connection after 15 seconds
+        alarm 15;
+        eval {
+            my $cddbp = new CDDB(
+				 Host => $config{cddb_host},
+				 Port => $config{cddb_port}
+				 ) and &msg("done.\n") or &error($!);
+
+            &msg('Retrieving CDDB info: ');
+
+            my ($cddbp_id,
+		$track_numbers,
+		$track_lengths,
+		$track_offsets,
+		$total_seconds
+		) = $cddbp->calculate_id(@toc);
+
+            $highest_tracknum = @$track_numbers[-1];
+            @tracktitles = @$track_numbers;
+
+            my $disc = ($cddbp->get_discs($cddbp_id, $track_offsets, $total_seconds))[0];
+
+            # Query disc based on cddbp ID and other information
+            ($genre, $cddbp_id) = @$disc[0,1];
+
+            my $disc_info = $cddbp->get_disc_details($genre, $cddbp_id);
+            $disctitle = $disc_info->{dtitle};
+
+            # put a space between info (e.g. Pink-Missundaztood)
+            $disctitle =~ s/\s*-\s*/ - /g if ($disctitle);
+
+            # replace slashes (/) by ' - '
+            $disctitle =~ s/\s*\/\s*/ - /g if ($disctitle);
+
+            ($artist, $disctitle) = split(/ - /, $disctitle, 2) if ($disctitle);
+
+            @tracktitles = @{$disc_info->{ttitles}};
+
+            # replace slashes (/) by ' - ' and '-' by ' - '
+            for (@tracktitles) {
+                s/\s*-\s*/ - /g;
+                s/\s*\/\s*/ - /g;
+            }
+
+            # Need a test condition for a failed cddb connection;
+            # every cd has a disctitle
+            unless ($disctitle) {
+                &msg("failed.\n");
+                $disctitle = $config{unknown};
+                &error("No CDDB info found") if ($config{stop_if_unknown});
+            } else {
+		&msg("done.\n");
+            }
+        };
+        alarm 0;
+    };
+    alarm 0;
+    return ($artist, $disctitle, $genre, $highest_tracknum, @tracktitles);
+}
+
+#------------------------------------------------------------------------------
+# Print some info about the rip
+#------------------------------------------------------------------------------
+sub print_info() {
+    my ($artist, $disctitle, $albumdir, $seltracks, $tracktitles) = @_;
+
+    my $tracknum = 0;
+
+    unless ($disctitle eq $config{unknown}) {
+        &msg("\nYou are about to rip from the CD:");
+
+        ($global{singleartist}) ?
+	    &msg("\n      " . $artist . $config{filemask_seperator} . $disctitle . "\n") :
+	    &msg("\n      " . $disctitle . "\n");
+
+        &msg("\nThe following tracks will be ripped:");
+
+        if ($global{individual}) {
+            foreach $tracknum (@$seltracks) {
+                my $track = @$tracktitles[$tracknum-1];
+                $track =~ s/\//-/g;
+                ($tracknum > 9) ?
+		    &msg("\n      $tracknum. $track") :
+		    &msg("\n       $tracknum. $track");
+            }
+        } else {
+            for (@$tracktitles) {
+                s/\//-/g;
+                $tracknum++;
+                $tracknum = " $tracknum" unless ($tracknum > 9);
+                &msg("\n      $tracknum. $_");
+            }
+        }
+        &msg("\n\n");
+    } else {
+        &msg("\nno CDDB data.\n\n");
+    }
+
+    &msg("encoder:         $config{encoder}\n");
+
+    &msg('on-the-fly:      ');
+    ($config{on_the_fly}) ?
+	&msg("yes\n") :
+	&msg("no\n");
+
+    &msg('optimization:    ');
+    ($config{optimize_speed}) ?
+	&msg("speed\n") :
+	&msg("quality\n");
+
+    &msg('single-artist:   ');
+    ($global{singleartist}) ?
+	&msg("yes\n") :
+	&msg("no\n");
+
+    &msg('replaygain:      ');
+    ($config{replaygain}) ?
+	&msg("yes\n") :
+	&msg("no\n");
+
+    &msg("album directory: ./$albumdir/\n");
+}
+
+#------------------------------------------------------------------------------
+# WAV encoder
+#------------------------------------------------------------------------------
+sub wav() {
+    my ($tracknum, $filename) = @_;
+
+    ($config{overwrite_tracks}) ?
+	$filename = $filename . '.wav' :
+	$filename = &get_nonexistant_filename($filename, '.wav');
+
+    my $command = 'cdparanoia -w -d "' . $devices[$global{device}] . '" ';
+    $command .= '-q ' unless ($config{show_progress});
+    $command .= '-- ' . $tracknum . ' "' . $filename . '"';
+
+    &encode($command, $tracknum, $filename);
+
+    &msg("done.\n");
+
+    return $filename;
+}
+
+#------------------------------------------------------------------------------
+# FLAC encoder
+#------------------------------------------------------------------------------
+sub flac() {
+    my ($rip_command, $tracknum, $tracktitle, $disctitle, $artist, $genre, $filename) = @_;
+
+    my $flac_options = '';
+    # grmbl...why doesn't this work:
+    # ($config{optimize_speed}) ?
+    #     $flac_options = '--fast' :
+    #     $flac_options = '--best';
+    # while the following does work:
+    if ($config{optimize_speed}) {
+        $flac_options = '--fast';
+    } else {
+        $flac_options = '--best';
+    }
+
+    # grmbl...doesn't work (bug in flac? according to manpage --replay-gain
+    # only shouldn't work when encoding TO stdout...)
+    #   $flac_options = $flac_options . ' --replay-gain' if $config{replaygain};
+
+    $flac_options .= ' -s' unless $config{show_progress};
+
+    $flac_options .= ' -T artist="' . $artist . '"' if $artist;
+    $flac_options .= ' -T title="' . $tracktitle . '"' if $tracktitle;
+    $flac_options .= ' -T tracknumber="' . $tracknum . '"' if $tracknum;
+    $flac_options .= ' -T genre="' . $genre . '"' if $genre;
+    $flac_options .= ' -T album="' . $disctitle . '"' if $disctitle;
+
+    my $fromfile = '-';
+
+    $fromfile = &wav($tracknum, $filename) unless ($config{on_the_fly});
+
+    ($config{overwrite_tracks}) ?
+	$filename = $filename . '.flac' :
+	$filename = &get_nonexistant_filename($filename, '.flac');
+
+    my $encode_command = "flac $flac_options \"$fromfile\" -o \"$filename\"";
+
+    if ($config{on_the_fly}) {
+        &encode("$rip_command | $encode_command", $tracknum, $filename);
+    } else {
+        &encode($encode_command, $tracknum, $filename);
+        unlink("$fromfile") if $config{remove_source_files};
+    }
+
+    # this shouldn't be necessary if flac --replay-gain works on
+    # encoding from stdin to file (see above)
+    `metaflac --add-replay-gain \"$filename\"` if $config{replaygain};
+    &error('metaflac error while adding replaygain') if $?;
+    &msg("done.\n");
+}
+
+#------------------------------------------------------------------------------
+# Ogg Vorbis encoder
+#------------------------------------------------------------------------------
+sub oggenc() {
+    my ($rip_command, $tracknum, $tracktitle, $disctitle, $artist, $genre, $filename) = @_;
+
+    my $bq = "-q $config{ogg_quality}";
+    if ($config{optimize_speed}) {
+        $bq = "-q $config{ogg_quality_speed}";
+        $bq = "-b $config{ogg_bitrate_speed}" if ($config{ogg_use_bitrate});
+    } else {
+        $bq = "-b $config{ogg_bitrate}" if ($config{ogg_use_bitrate});
+    }
+
+    my $fromfile = '-';
+    $fromfile = &wav($tracknum, $filename) unless ($config{on_the_fly});
+
+    ($config{overwrite_tracks}) ?
+	$filename = $filename . '.ogg' :
+	$filename = &get_nonexistant_filename($filename, '.ogg');
+
+    my $encode_command = 'oggenc ' . $bq . ' -N ' . $tracknum . ' -t "' . $tracktitle . '" "' . $fromfile . '" -o "' . $filename . '"';
+
+    unless ($disctitle eq $config{unknown}) {
+        $encode_command = $encode_command . " -l \"$disctitle\" -a \"$artist\" -G \"$genre\"";
+    }
+    $encode_command = $encode_command . ' -Q' if (! $config{show_progress});
+
+    if ($config{on_the_fly}) {
+        &encode("$rip_command | $encode_command", $tracknum, $filename);
+    } else {
+        &encode($encode_command, $tracknum, $filename);
+        unlink("$fromfile") if $config{remove_source_files};
+    }
+
+    &vorbisgain($filename) if ($config{replaygain});
+    &msg("done.\n");
+}
+
+#------------------------------------------------------------------------------
+# Ogg Vorbis Replaygain
+#------------------------------------------------------------------------------
+sub vorbisgain() {
+    my $filename = $_[0];
+    my $args = '';
+    $args = '-q' if (! $config{show_progress});
+    `vorbisgain $args "$filename"`;
+    &error('vorbisgain error while adding replaygain') if $?;
+}
+
+#------------------------------------------------------------------------------
+# Encode
+#------------------------------------------------------------------------------
+sub encode() {
+    my ($command, $tracknum, $filename) = @_;
+
+    &msg('vlorbing track ' . $tracknum . ' to: ' . $filename . ': ');
+    &msg("\n") if $config{show_progress};
+
+    `$command`;
+
+    &error('rip or encode error') if $?;
+}
+
+#------------------------------------------------------------------------------
+# Rip and encode
+#------------------------------------------------------------------------------
+sub vlorb() {
+    my ($artist, $genre, $disctitle, $filemask, $seltracks, $tracktitles) = @_;
+
+    foreach my $tracknum (@$seltracks) {
+        my $disctitle2 = $disctitle;
+        my $genre2 = $genre;
+        my $artist2 = $artist;
+        my $tracktitle = '';
+        my $filename = '';
+
+        $tracknum = "0$tracknum" unless ($tracknum > 9);
+
+        if ($disctitle eq $config{unknown}) {
+            $filename = "track$tracknum";
+            $tracktitle = $filename;
+        } else {
+            if ($global{singleartist}) {
+                $tracktitle = $$tracktitles[$tracknum - 1];
+                $artist = $artist2;
+            } else {
+                ($artist, $tracktitle) = split(/ - /, $$tracktitles[$tracknum - 1], 2);
+
+                # sometimes, artist info is not available. Then, most
+                # probably, the only thing given is the
+                # tracktitle; so, set $tracktitle to $artist.
+                unless ($tracktitle) {
+                    $tracktitle = $artist;
+                    $artist = '';
+                }
+            }
+
+            ($artist, $tracktitle) = &swap_vars($artist, $tracktitle) if $global{swap_artist_tracktitle};
+
+            # translate filemask to a filename
+            my @fname = split(//, $filemask);
+            my $i = 0;
+            for (@fname) {
+	      SWITCH: {
+		  $_ eq 'A' && do { $fname[$i] = $artist };
+		  $_ eq 'D' && do { $fname[$i] = $disctitle2 };
+		  $_ eq 'G' && do { $fname[$i] = $genre2 };
+		  $_ eq 'N' && do { $fname[$i] = $tracknum };
+		  $_ eq 'T' && do { $fname[$i] = $tracktitle };
+	      }
+                $i++;
+            }
+
+            $filename = shift @fname;
+            for (@fname) {
+                $filename = $filename . $config{filemask_seperator} . $_ if ($_);
+            }
+        }
+
+        # escape double quotes in strings
+        $artist = &escape_var($artist);
+        $disctitle2 = &escape_var($disctitle2);
+        $genre2 = &escape_var($genre2);
+        $tracktitle = &escape_var($tracktitle);
+        $filename = &escape_var($filename);
+
+        my $rip_command = 'cdparanoia -q -d "' . $devices[$global{device}] . '" -w -- ' . $tracknum . ' -';
+        $rip_command = 0 unless ($config{on_the_fly});
+
+      SWITCH: {
+	  $config{encoder} eq 'oggenc' && do {
+	      &oggenc($rip_command, $tracknum, $tracktitle, $disctitle2, $artist, $genre2, $filename)
+	      };
+	  $config{encoder} eq 'flac' && do {
+	      &flac($rip_command, $tracknum, $tracktitle, $disctitle2, $artist, $genre2, $filename)
+	      };
+	  $config{encoder} eq 'wav' && do {
+	      &wav($tracknum, $filename)
+	      };
+      }
+    }
+
+    # Game Over! The End! Done! Finished!
+    &msg("vlorbed!\n");
+}
+
+# Run
+&phase1;

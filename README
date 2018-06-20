@@ -1,0 +1,154 @@
+vlorb, a CD to audio file ripper and encoder.
+Copyright (c) 2002, Jochem Kossen
+
+--------------------------------------------------------------------------------
+DEPENDS ON:
+--------------------------------------------------------------------------------
+ * cdparanoia, http://www.xiph.org/paranoia
+ * Perl, http://www.perl.org
+ * Perl CDDB module, http://www.cpan.org
+
+--------------------------------------------------------------------------------
+OPTIONAL DEPENDS:
+--------------------------------------------------------------------------------
+ * An encoder, currently one of:
+   - oggenc (vorbis-tools), http://www.vorbis.com
+   - flac, http://flac.sourceforge.net
+   Without one of those, vlorb will encode to WAV files using cdparanoia
+ * VorbisGain (Ogg Vorbis ReplayGain), http://sjeng.org/vorbisgain.html
+   For more information about ReplayGain, see http://replaygain.org
+
+--------------------------------------------------------------------------------
+INSTALL PERL CDDB MODULE:
+--------------------------------------------------------------------------------
+There are a number of ways to install the Perl CDDB module.
+1) use a package from your operating system provider, usually the package is
+   called 'perl-cddb' or something like that
+
+2) download the perl-CDDB tarball from
+   http://search.cpan.org/CPAN/authors/id/R/RC/RCAPUTO/CDDB-1.08.tar.gz
+   and install as follows:
+
+ # tar -zxf /path/to/CDDB-1.08.tar.gz
+ # cd CDDB-1.08
+ # perl Makefile.PL
+ # make
+ # make install
+
+3) Use Perl's automatic install method.
+Type the following at your prompt:
+
+ # perl -MCPAN -e shell
+ cpan> install CDDB
+
+--------------------------------------------------------------------------------
+INSTALL VLORB:
+--------------------------------------------------------------------------------
+ # cd /tmp
+ # tar -zxf /path/to/vlorb-1.2.tar.gz (where 1.2 is the version)
+ # cd vlorb-1.2
+ # make install
+
+--------------------------------------------------------------------------------
+UNINSTALL VLORB:
+--------------------------------------------------------------------------------
+ # cd /tmp
+ # tar -zxf /path/to/vlorb-1.2.tar.gz (where 1.2 is the version)
+ # cd vlorb-1.2
+ # make uninstall
+
+--------------------------------------------------------------------------------
+ABOUT VLORB:
+--------------------------------------------------------------------------------
+vlorb was based on Ratrip 1.3 by Amy Nugent ((c) 2002) which is a nice
+program, but i didn't like the colors and interactivity. It also
+lacked several features i wanted (specifying oggenc quality,
+single-artist cd's, vorbisgain, etc.) and it had quite a few bugs.
+
+Anyway, I shamelessly took his code, to morph it into vlorb. Open
+Source rocks. At this point, there's only very little evidence left
+behind which proves that vlorb was based on RatRip. For Ratrip, see
+http://www.linuxrat.org
+
+--------------------------------------------------------------------------------
+LICENSE:
+--------------------------------------------------------------------------------
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Library General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+The file COPYING (in the tarball) contains a copy of the GNU General
+Public License.
+
+NOTE: I might change the license to some kind of BSD-a-like license
+when i'm sure there's no more specific RatRip code in vlorb. I like
+the BSD license better.
+
+--------------------------------------------------------------------------------
+CREDITS (send me an email if i forgot about you):
+--------------------------------------------------------------------------------
+ * Han Boetes, a LOT of things (OpenBSD port comes to mind) :)
+ * Bas Kok, invented the 'to vlorb' verb
+ * Bastiaan Cuppen, lots (suggestions, bugs, truckloads of strong black coffee)
+ * Amy Nugent, wrote Ratrip
+ * Jeroen Vloothuis, testing, making suggestions
+ * You, for looking at this!
+
+--------------------------------------------------------------------------------
+FEATURES TO GIVE SOME THOUGHT (or, what vlorb is missing currently):
+--------------------------------------------------------------------------------
+ * optional colors, off by default (Han)
+ * database/HTML/XML/command export or "catalogue creation" (jochem)
+ * remaining time calculation (Bastiaan Cuppen)
+ * nicer output (jochem)
+ * editing of tags/cddb info before ripping
+ * continue aborted rips (Bastiaan Cuppen and Jeroen Vloothuis)
+
+--------------------------------------------------------------------------------
+RELEASE NOTES:
+--------------------------------------------------------------------------------
+1.2:
+ * Autodetection everywhere (apps, devices, ...)
+ * FLAC support added (-e flac)
+ * WAV support added (-e wav)
+ * -v (vorbisgain) option changed to -r (replaygain)
+ * -t option (switch artist and tracktitle info in case of bad CDDB info)
+ * -f option (toggle on the fly mode)
+ * configfile change: use_vorbisgain changed to use_replaygain
+ * bugfix: vlorb -h didn't work in case of wrong option(s) configfile (reported
+   by Bastiaan Cuppen)
+ * bugfix: vlorb 1.1 didn't handle unknown CD's correctly (reported by Han
+   Boetes)
+
+1.1:
+ * bugfix: double quotes were not properly escaped
+ * vlorb will now autodetect if an audio cd is single-artist or
+   multi-artist. If it detects wrongly, use the -s option to toggle
+   single-/multi-artist.
+ * the singleartist option from the configuration file was removed
+ * show_progress (the -p option) mode was added. It shows oggenc
+   encoding progress. It's off by default since it's pretty ugly.
+ * better error checking/messages
+ * added -m and -M options for specifying filemask and dirmask on the
+   commandline
+
+1.0:
+ * during the 1.0pre versions the format of the configuration file
+   changed a couple of times. It could be necessary to generate a new one
+   using vlorb's -g flag.
+ * Makefile is now FHS compliant and works under OpenBSD more easy
+   too.
+ * various bugfixes, cleanups and polish was made
+ * rewritten manpage
+
+$Id: README,v 1.6.2.3.2.5 2003/07/18 11:02:32 jochem Exp $

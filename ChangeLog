@@ -1,0 +1,519 @@
+2003-07-18 13:17  jochem
+
+	Changed:
+		ChangeLog (1.1.2.9), "Exp", lines: +15 -0
+		vlorb.1 (1.4.2.2.2.4), "Exp", lines: +1 -1
+
+	updated date in manpage
+	
+2003-07-18 13:08  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.15), "Exp", lines: +3 -3
+
+	oops: 1.2rc -> 1.2pre1
+	
+2003-07-18 13:02  jochem
+
+	Changed:
+		ChangeLog (1.1.2.8), "Exp", lines: +21 -0
+		README (1.6.2.3.2.5), "Exp", lines: +8 -1
+
+	update
+	
+2003-07-18 12:52  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.14), "Exp", lines: +121 -103
+		vlorb.1 (1.4.2.2.2.3), "Exp", lines: +7 -1
+
+	First try second device instead of first device, since when people have two devices, the first is most likely a CD burner and not used for ripping
+
+	Add -t option to swap tracktitle and artist info in case of bad CDDB info
+
+	Fix some indentation issues which were introduced when switching from emacs to vim
+
+	vlorb-1.2cvs -> vlorb-1.2rc
+	
+2003-07-13 15:53  jochem
+
+	Changed:
+		ChangeLog (1.1.2.7), "Exp", lines: +390 -136
+
+	update
+	
+2003-07-13 15:19  jochem
+
+	Changed:
+		vlorb.1 (1.4.2.2.2.2), "Exp", lines: +115 -43
+
+	manpage updates
+	
+2003-07-04 17:50  jochem
+
+	Changed:
+		README (1.6.2.3.2.4), "Exp", lines: +9 -8
+
+	updated README
+	
+2003-07-04 17:22  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.13), "Exp", lines: +466 -455
+
+	cleanups
+	
+2003-06-14 11:41  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.12), "Exp", lines: +6 -6
+
+	oops
+	
+2003-06-14 11:20  jochem
+
+	Changed:
+		ChangeLog (1.1.2.6), "Exp", lines: +11 -0
+		vlorb (1.26.2.7.2.11), "Exp", lines: +11 -8
+
+	BUGFIX: quote escaping of disc info
+	
+2003-06-11 13:58  jochem
+
+	Changed:
+		ChangeLog (1.1.2.5), "Exp", lines: +13 -0
+		vlorb (1.26.2.7.2.10), "Exp", lines: +82 -54
+
+	cleanups config option onthefly -> on_the_fly added remove_source_files option for off the fly ripping added stop_if_unknown option for the people who'd want that (Han Boetes for example :P) BUGFIX: vlorb'd try to continue vlorbing after it was done if multiple devices were tried (ye ye, vague description). Reported by Han Boetes
+	
+2003-06-02 14:12  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.9), "Exp", lines: +53 -27
+
+	- on-the-fly/off-the-fly ripping (-f switches it). Slow computers   should like off-the-fly better...
+	
+2003-06-02 12:55  jochem
+
+	Changed:
+		README (1.6.2.3.2.3), "Exp", lines: +5 -4
+		vlorb (1.26.2.7.2.8), "Exp", lines: +47 -10
+
+	- WAV support added - some very minor cleanups
+	
+2003-06-02 11:10  jochem
+
+	Changed:
+		ChangeLog (1.1.2.4), "Exp", lines: +16 -0
+		vlorb (1.26.2.7.2.7), "Exp", lines: +4 -3
+
+	small bug where vlorb -h didn't work in case of wrong option(s) configfile (reported by Bastiaan Cuppen)
+	
+2003-05-28 13:43  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.6), "Exp", lines: +411 -241
+
+	- device auto-detection - app auto-detection - FLAC support (see http://flac.sourceforge.net) - choice to optimize for speed or quality. Default quality,   fine-grained settings in configuration file - BUGFIX: vlorb 1.1 didn't handle unknown CD's correctly (reported by Han Boetes) - Some options changed (-v/vorbisgain to -r/replaygain, ...) - Some configfile options changed (vorbisgain->replaygain, ...)
+	
+2003-05-23 13:48  jochem
+
+	Changed:
+		ChangeLog (1.1.2.3), "Exp", lines: +15 -0
+		vlorb (1.26.2.7.2.5), "Exp", lines: +12 -7
+
+	- ChangeLog updated - flac vorbiscomment fields added (ID3 information in flac files)
+	
+2003-05-23 13:07  jochem
+
+	Changed:
+		Makefile (1.4.2.3.2.1), "Exp", lines: +2 -2
+		README (1.6.2.3.2.2), "Exp", lines: +41 -26
+		vlorb (1.26.2.7.2.4), "Exp", lines: +113 -51
+		vlorb.1 (1.4.2.2.2.1), "Exp", lines: +19 -12
+
+	- FLAC support added (still need to figure out id3/vorbiscomment stuff) - more sane default device name based on the operating system used - some cleanups - mandir fixed in Makefile *sigh* (thanks Han) - changed -v (vorbisgain) option to -r (replaygain) - manpage updated - README updated
+	
+2003-05-13 14:50  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.3), "Exp", lines: +3 -3
+
+	oops... 1.1pre2 -> 1.1
+	
+2003-05-13 14:46  jochem
+
+	Changed:
+		ChangeLog (1.1.2.2), "Exp", lines: +9 -0
+
+	updated ChangeLog to reflect 1.1
+	
+2003-05-13 14:44  jochem
+
+	Changed:
+		vlorb (1.26.2.7.2.2), "Exp", lines: +11 -5
+
+	1.1: improved artist/tracktitle detection a bit...
+	
+2003-05-13 13:10  jochem
+
+	Changed:
+		README (1.6.2.3.2.1), "Exp", lines: +13 -1
+		vlorb (1.26.2.7.2.1), "Exp", lines: +3 -3
+
+	updated README (release notes) and version 1.1pre1 -> 1.1pre2
+	
+2003-05-13 13:07  jochem
+
+	Changed:
+		ChangeLog (1.1.2.1), "Exp", lines: +157 -0
+
+	ChangeLog added
+	
+2003-05-13 12:33  jochem
+
+	Changed:
+		Makefile (1.4.2.3), "Exp", lines: +2 -2
+
+	accoring to hier(7) docs need to be installed in /share/doc instead of /doc
+	
+2003-05-13 12:10  jochem
+
+	Deleted:
+		vlorb.1.sgml (1.1.2.3)
+	Changed:
+		vlorb (1.26.2.7), "Exp", lines: +18 -18
+		vlorb.1 (1.4.2.2), "Exp", lines: +278 -200
+
+	- Removed stale singleartist option from configuration file - Docbook is messy, so out with the docbook version of the manpage, in with the pure roff manpage - Switched show_progress off by default
+	
+2003-05-07 12:56  jochem
+
+	Changed:
+		vlorb (1.26.2.6), "Exp", lines: +3 -3
+
+	version number 1.1cvs --> 1.1pre1
+	
+2003-05-07 12:55  jochem
+
+	Changed:
+		vlorb (1.26.2.5), "Exp", lines: +102 -33
+		vlorb.1.sgml (1.1.2.2), "Exp", lines: +66 -2
+
+	1.1pre1 * bugfix: properly escape double quotes (") * better error checking * added -p option, show_progress mode, shows encoding progress * added -m and -M options for specifying dirmask and filemask * automatic checking if CD is single-artist
+	
+2003-04-08 13:20  jochem
+
+	Changed:
+		README (1.6.2.3), "Exp", lines: +1 -2
+
+	Makefile does not install docs per default
+	
+2003-04-07 20:51  jochem
+
+	Changed:
+		README (1.6.2.2), "Exp", lines: +4 -3
+
+	a little more clarification
+	
+2003-04-07 20:19  jochem
+
+	Deleted:
+		vlorb.1 (1.5)
+		vlorb.1 (1.4.2.1)
+
+	removed original manpage in favor of docbook manpage
+	
+2003-04-07 20:18  jochem
+
+	Changed:
+		vlorb.1.sgml (1.1.2.1), "Exp", lines: +2 -2
+
+	imported manpage from HEAD
+	
+2003-04-07 20:18  jochem
+
+	Added:
+		vlorb.1.sgml (1.1)
+
+	rewritten manpage in Docbook
+	
+2003-04-07 17:40  jochem
+
+	Changed:
+		vlorb (1.26.2.4), "Exp", lines: +3 -3
+
+	blah
+	
+2003-04-07 17:35  jochem
+
+	Changed:
+		vlorb (1.26.2.3), "Exp", lines: +2 -2
+
+	vlorb itself is 1.0 ready
+	
+2003-04-06 23:51  jochem
+
+	Changed:
+		Makefile (1.6), "Exp", lines: +18 -15
+
+
+	* Make it reaaaally work on OpenBSD :-) * ( to {, ) to }
+	
+2003-04-06 23:23  jochem
+
+	Changed:
+		vlorb (1.26.2.2), "Exp", lines: +10 -10
+
+	more " --> '
+	
+2003-04-06 23:07  jochem
+
+	Changed:
+		README (1.7), "Exp", lines: +9 -2
+		README (1.6.2.1), "Exp", lines: +9 -2
+
+	updated README
+	
+2003-04-05 13:02  jochem
+
+	Changed:
+		Makefile (1.4.2.2), "Exp", lines: +18 -15
+
+	make it reeaaaally work on OpenBSD
+	
+2003-04-05 12:05  jochem
+
+	Changed:
+		Makefile (1.4.2.1), "Exp", lines: +19 -26
+		Makefile (1.5), "Exp", lines: +19 -26
+
+	Makefile improvements: FHS compliant, lowercase PREFIX variables, more compatible with both Linux and OpenBSD
+	
+2003-04-04 15:44  jochem
+
+	Changed:
+		vlorb (1.26.2.1), "Exp", lines: +3 -5
+
+	away with the too simple if()'s :)
+	
+2003-04-04 15:38  jochem
+
+	Changed:
+		vlorb (1.27), "Exp", lines: +5 -4
+
+	add -c option (code comes later ;))\nversion -> 1.1cvs\n
+	
+2003-04-04 15:26  jochem
+
+	Changed:
+		Makefile (1.4), "Exp", lines: +17 -8
+		README (1.6), "Exp", lines: +47 -18
+		vlorb (1.26), "Exp", lines: +11 -17
+
+	README, Makefile improvements; vlorb cleanups
+	
+2003-04-03 23:34  jochem
+
+	Changed:
+		Makefile (1.3), "Exp", lines: +5 -2
+		vlorb (1.25), "Exp", lines: +30 -30
+
+	fixes to Makefile, cleanups and polish. This should be 1.0 except for the version
+	
+2003-04-03 19:16  jochem
+
+	Changed:
+		README (1.5), "Exp", lines: +10 -8
+		vlorb (1.24), "Exp", lines: +248 -182
+		vlorb.1 (1.4), "Exp", lines: +51 -21
+
+	split up overwrite mode into overwrite_dir and overwrite_tracks, some small fixes and a _lot_ of polish
+	
+2003-03-29 18:17  jochem
+
+	Changed:
+		vlorb.1 (1.3), "Exp", lines: +84 -1
+
+	configuration option clarification
+	
+2003-03-29 18:16  jochem
+
+	Changed:
+		vlorb (1.23), "Exp", lines: +5 -4
+
+	pre10: stupid typo corrected
+	
+2003-03-29 16:10  jochem
+
+	Changed:
+		Makefile (1.2), "Exp", lines: +3 -4
+		vlorb (1.22), "Exp", lines: +24 -24
+		vlorb.1 (1.2), "Exp", lines: +11 -5
+
+	pre9: quote polish, Makefile improvements, manpage improvements
+	
+2003-03-29 12:26  jochem
+
+	Added:
+		Makefile (1.1)
+	Changed:
+		README (1.4), "Exp", lines: +18 -5
+		vlorb (1.21), "Exp", lines: +4 -4
+
+	pre8: addition of Makefile, more 's/Vlorb/vlorb/g'
+	
+2003-03-29 12:01  jochem
+
+	Added:
+		vlorb.1 (1.1)
+	Changed:
+		README (1.3), "Exp", lines: +11 -3
+		vlorb (1.20), "Exp", lines: +3 -4
+
+	added manpage, s/Vlorb/vlorb in vlorb, some README additions
+	
+2003-03-27 22:29  jochem
+
+	Changed:
+		vlorb (1.19), "Exp", lines: +20 -13
+
+	pre7, some polish; configuration file bugfixes
+	
+2003-03-25 11:39  jochem
+
+	Changed:
+		vlorb (1.18), "Exp", lines: +61 -60
+
+	cleanups, polish and some small fixes
+	
+2003-03-19 18:52  jochem
+
+	Changed:
+		vlorb (1.17), "Exp", lines: +119 -68
+
+	documenting stuff (thanks Han), more intelligent filename generation, some small fixes and some polish
+	
+2003-03-18 15:48  jochem
+
+	Changed:
+		vlorb (1.16), "Exp", lines: +79 -63
+
+	polish, cleanups && bugfixes
+	
+2003-03-13 18:51  jochem
+
+	Changed:
+		README (1.2), "Exp", lines: +2 -5
+		vlorb (1.15), "Exp", lines: +183 -83
+
+	pre3: cleanups, configfile generation, configfile parsing, overwrite protection, individual track numbers checking, bugs fixed, ...
+	
+2003-03-05 14:39  jochem
+
+	Changed:
+		vlorb (1.14), "Exp", lines: +23 -18
+
+	pre2: fixes (genre), cleanups
+	
+2003-03-03 13:59  jochem
+
+	Changed:
+		vlorb (1.13), "Exp", lines: +2 -2
+
+	oops, forgot this :)
+	
+2003-03-03 13:57  jochem
+
+	Added:
+		COPYING (1.1)
+		README (1.1)
+	Changed:
+		vlorb (1.12), "Exp", lines: +81 -67
+
+	added VorbisGain (Vorbis Replaygain) feature, a Quiet option (only output errors), added the GPL (see COPYING), moved all info from vlorb into a separate file called README, added version info
+	
+2003-03-03 11:18  jochem
+
+	Changed:
+		vlorb (1.11), "Exp", lines: +217 -170
+
+	too much to mention, but mainly got rid of global vars, and added filemask possibility
+	
+2003-02-05 01:41  jochem
+
+	Changed:
+		vlorb (1.10), "Exp", lines: +169 -120
+
+	too much to mention, but it now adheres to 'use strict;' somehow :-)
+	
+2003-02-04 19:25  jochem
+
+	Changed:
+		vlorb (1.9), "Exp", lines: +8 -3
+
+	fix foldername for multi-artist cd
+	
+2003-02-04 18:12  jochem
+
+	Changed:
+		vlorb (1.8), "Exp", lines: +11 -5
+
+	more finegrained bitrate choosing support + small fix (didn't check if  actually was a digit)
+	
+2003-02-04 17:53  jochem
+
+	Changed:
+		vlorb (1.7), "Exp", lines: +12 -4
+
+	added TODO
+	
+2003-02-04 16:54  jochem
+
+	Changed:
+		vlorb (1.6), "Exp", lines: +18 -11
+
+	CREDITS added; more elegant quality and bitrate checking, another bitrate/quality fix (last one apparently didn't :S
+	
+2003-02-04 15:17  jochem
+
+	Changed:
+		vlorb (1.5), "Exp", lines: +14 -13
+
+	getopts into hash instead of global vars. First steps to 'strict' compliance
+	
+2003-02-04 15:08  jochem
+
+	Changed:
+		vlorb (1.4), "Exp", lines: +3 -2
+
+	i feel like committing atm
+	
+2003-02-04 00:39  jochem
+
+	Changed:
+		vlorb (1.3), "Exp", lines: +37 -42
+
+	cleanups, fixes...
+	
+2003-02-03 22:33  jochem
+
+	Changed:
+		vlorb (1.2), "Exp", lines: +25 -16
+
+	cleanups + small b/q bugfix
+	
+2003-02-03 18:55  jochem
+
+	Changed:
+		vlorb (1.1.1.1), "Exp", lines: +0 -0
+
+	Imported sources
+	
+2003-02-03 18:55  jochem
+
+	Added:
+		vlorb (1.1)
+
+	Initial revision
+	
