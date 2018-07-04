@@ -117,6 +117,9 @@ $config{dirmask_s} = 'AD';
 # MP3...dunno, since it's obsoleted by ogg, and non-free...
 $config{encoder} = 'oggenc';
 
+# name of cdparanoia executable to use
+$config{cdparanoia} = 'cdparanoia';
+
 #------------------------------------------------------------------------------
 # Global vars, don't change these
 #------------------------------------------------------------------------------
@@ -293,7 +296,7 @@ sub phase3() {
 # Detect available apps
 #------------------------------------------------------------------------------
 sub detect_apps() {
-    `cdparanoia -V 2>&1`;
+    `$config{cdparanoia} -V 2>&1`;
     $global{have_cdparanoia} = 1 if ($? == 0);
     `oggenc -V 2>&1`;
     $global{have_oggenc} = 1 if ($? == 0);
@@ -747,7 +750,7 @@ sub mk_album_directory() {
 sub get_raw_toc() {
     &msg('Reading TOC: ');
     my @toc = ();
-    my $output = `cdparanoia -d $devices[$global{device}] -Q 2>&1`;
+    my $output = `$config{cdparanoia} -d $devices[$global{device}] -Q 2>&1`;
     if ($?) {
         if (&switch_device != -1) {
             &msg("failed. Trying alternative device...\n");
@@ -935,7 +938,7 @@ sub wav() {
 	$filename = $filename . '.wav' :
 	$filename = &get_nonexistant_filename($filename, '.wav');
 
-    my $command = 'cdparanoia -w -d "' . $devices[$global{device}] . '" ';
+    my $command = $config{cdparanoia} . ' -w -d "' . $devices[$global{device}] . '" ';
     $command .= '-q ' unless ($config{show_progress});
     $command .= '-- ' . $tracknum . ' "' . $filename . '"';
 
@@ -1128,7 +1131,7 @@ sub vlorb() {
         $tracktitle = &escape_var($tracktitle);
         $filename = &escape_var($filename);
 
-        my $rip_command = 'cdparanoia -q -d "' . $devices[$global{device}] . '" -w -- ' . $tracknum . ' -';
+        my $rip_command = $config{cdparanoia} . ' -q -d "' . $devices[$global{device}] . '" -w -- ' . $tracknum . ' -';
         $rip_command = 0 unless ($config{on_the_fly});
 
       SWITCH: {
