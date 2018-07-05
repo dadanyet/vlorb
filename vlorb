@@ -1148,6 +1148,7 @@ sub vlorb() {
     }
 
     # Game Over! The End! Done! Finished!
+    `eject $devices[$global{device}]`;
     &msg("vlorbed!\n");
 }
 
