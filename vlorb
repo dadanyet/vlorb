@@ -665,12 +665,15 @@ sub toggle() {
 }
 
 #------------------------------------------------------------------------------
-# Escape characters hated by filenames
+# Escape characters hated by shells
 #------------------------------------------------------------------------------
 sub escape_var() {
     my $var = shift;
+    $var =~ s/'/\\'/g if ($var);
     $var =~ s/"/\\"/g if ($var);
     $var =~ s/`/\\`/g if ($var);
+    $var =~ s/\(/\\\(/g if ($var);
+    $var =~ s/\)/\\\)/g if ($var);
     return $var;
 }
 
